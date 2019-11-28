@@ -7,25 +7,26 @@ import jmetal.encodings.variable.ArrayInt;
 import jmetal.encodings.variable.Binary;
 
 public class ArrayIntAndBinarySolutionType extends SolutionType {
-	private final int size;
-	private final double[] prob;
 
-	public ArrayIntAndBinarySolutionType(Problem problem, int size, double[] prob) {
-		super(problem);
-		this.size = size;
-		this.prob = prob;
-		// TODO Auto-generated constructor stub
-	}
+    private final int size;
+    private final double[] prob;
 
-	@Override
-	public Variable[] createVariables() throws ClassNotFoundException {
-		// TODO Auto-generated method stub
-		Variable[] variables = new Variable[2];
+    public ArrayIntAndBinarySolutionType(Problem problem, int size, double[] prob) {
+        super(problem);
+        this.size = size;
+        this.prob = prob;
+        // TODO Auto-generated constructor stub
+    }
 
-		variables[0] = new ArrayInt(2 * size, problem_);
-		variables[1] = new Binary(size, prob);
+    @Override
+    public Variable[] createVariables() throws ClassNotFoundException {
+        // TODO Auto-generated method stub
+        Variable[] variables = new Variable[2];
 
-		return variables;
-	}
+        variables[0] = new ArrayInt(2 * size, problem_);
+        variables[1] = new Binary(size, prob);
+
+        return variables;
+    }
 
 }

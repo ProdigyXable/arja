@@ -10,196 +10,208 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.Modifier;
-
 import us.msu.cse.repair.core.util.Helper;
 
 public class MethodDetector {
-	List<ModificationPoint> modificationPoints;
 
-	Map<String, ITypeBinding> declaredClasses;
+    List<ModificationPoint> modificationPoints;
 
-	Set<String> dependences;
-	URLClassLoader classLoader;
+    Map<String, ITypeBinding> declaredClasses;
 
-	Map<String, Map<String, MethodInfo>> declaredMethodMap;
-	Map<String, Map<String, MethodInfo>> inheritedMethodMap;
-	Map<String, Map<String, MethodInfo>> outerMethodMap;
+    Set<String> dependences;
+    URLClassLoader classLoader;
 
-	public MethodDetector(List<ModificationPoint> modificationPoints, Map<String, ITypeBinding> declaredClasses,
-			Set<String> dependences) throws MalformedURLException {
-		this.modificationPoints = modificationPoints;
-		this.declaredClasses = declaredClasses;
-		this.dependences = dependences;
+    Map<String, Map<String, MethodInfo>> declaredMethodMap;
+    Map<String, Map<String, MethodInfo>> inheritedMethodMap;
+    Map<String, Map<String, MethodInfo>> outerMethodMap;
 
-		declaredMethodMap = new HashMap<String, Map<String, MethodInfo>>();
-		inheritedMethodMap = new HashMap<String, Map<String, MethodInfo>>();
-		outerMethodMap = new HashMap<String, Map<String, MethodInfo>>();
+    public MethodDetector(List<ModificationPoint> modificationPoints, Map<String, ITypeBinding> declaredClasses,
+            Set<String> dependences) throws MalformedURLException {
+        this.modificationPoints = modificationPoints;
+        this.declaredClasses = declaredClasses;
+        this.dependences = dependences;
 
-		if (dependences != null) {
-			URL[] urls = Helper.getURLs(dependences);
-			classLoader = new URLClassLoader(urls);
-		} else
-			classLoader = new URLClassLoader(new URL[0]);
+        declaredMethodMap = new HashMap<String, Map<String, MethodInfo>>();
+        inheritedMethodMap = new HashMap<String, Map<String, MethodInfo>>();
+        outerMethodMap = new HashMap<String, Map<String, MethodInfo>>();
 
-	}
+        if (dependences != null) {
+            URL[] urls = Helper.getURLs(dependences);
+            classLoader = new URLClassLoader(urls);
+        } else {
+            classLoader = new URLClassLoader(new URL[0]);
+        }
 
-	public void detect() throws ClassNotFoundException, IOException {
-		for (ModificationPoint mp : modificationPoints)
-			detectVisibleMethods(mp);
-		classLoader.close();
-	}
+    }
 
-	private void detectVisibleMethods(ModificationPoint mp) throws ClassNotFoundException {
-		// TODO Auto-generated method stub
-		String className = mp.getLCNode().getClassName();
+    public void detect() throws ClassNotFoundException, IOException {
+        for (ModificationPoint mp : modificationPoints) {
+            detectVisibleMethods(mp);
+        }
+        classLoader.close();
+    }
 
-		detectVisibleMethods(className);
+    private void detectVisibleMethods(ModificationPoint mp) throws ClassNotFoundException {
+        // TODO Auto-generated method stub
+        String className = mp.getLCNode().getClassName();
 
-		Map<String, MethodInfo> declaredMethods = declaredMethodMap.get(className);
-		Map<String, MethodInfo> inheritedMethods = inheritedMethodMap.get(className);
-		Map<String, MethodInfo> outerMethods = outerMethodMap.get(className);
+        detectVisibleMethods(className);
 
-		if (mp.isInStaticMethod()) {
-			declaredMethods = getStaticMethods(declaredMethods);
-			inheritedMethods = getStaticMethods(inheritedMethods);
-		}
+        Map<String, MethodInfo> declaredMethods = declaredMethodMap.get(className);
+        Map<String, MethodInfo> inheritedMethods = inheritedMethodMap.get(className);
+        Map<String, MethodInfo> outerMethods = outerMethodMap.get(className);
 
-		mp.setDeclaredMethods(declaredMethods);
-		mp.setInheritedMethods(inheritedMethods);
-		mp.setOuterMethods(outerMethods);
-	}
+        if (mp.isInStaticMethod()) {
+            declaredMethods = getStaticMethods(declaredMethods);
+            inheritedMethods = getStaticMethods(inheritedMethods);
+        }
 
-	void detectVisibleMethods(String className) throws ClassNotFoundException {
-		if (declaredMethodMap.containsKey(className))
-			return;
+        mp.setDeclaredMethods(declaredMethods);
+        mp.setInheritedMethods(inheritedMethods);
+        mp.setOuterMethods(outerMethods);
+    }
 
-		Map<String, MethodInfo> methods;
-		String superClassName = null, outerClassName = null;
-		boolean isStaticClass;
+    void detectVisibleMethods(String className) throws ClassNotFoundException {
+        if (declaredMethodMap.containsKey(className)) {
+            return;
+        }
 
-		if (declaredClasses.containsKey(className)) {
-			ITypeBinding tb = declaredClasses.get(className);
-			IMethodBinding[] mbs = tb.getDeclaredMethods();
+        Map<String, MethodInfo> methods;
+        String superClassName = null, outerClassName = null;
+        boolean isStaticClass;
 
-			methods = Helper.getMethodInfos(mbs);
+        if (declaredClasses.containsKey(className)) {
+            ITypeBinding tb = declaredClasses.get(className);
+            IMethodBinding[] mbs = tb.getDeclaredMethods();
 
-			ITypeBinding superClass = tb.getSuperclass();
-			if (superClass != null && !superClass.isInterface())
-				superClassName = superClass.getBinaryName();
+            methods = Helper.getMethodInfos(mbs);
 
-			ITypeBinding outerClass = tb.getDeclaringClass();
-			if (outerClass != null && !outerClass.isInterface())
-				outerClassName = outerClass.getBinaryName();
+            ITypeBinding superClass = tb.getSuperclass();
+            if (superClass != null && !superClass.isInterface()) {
+                superClassName = superClass.getBinaryName();
+            }
 
-			isStaticClass = Modifier.isStatic(tb.getModifiers());
-		} else {
-			Class<?> target = classLoader.loadClass(className);
-			Method[] mds = target.getDeclaredMethods();
-			methods = Helper.getMethodInfos(mds);
+            ITypeBinding outerClass = tb.getDeclaringClass();
+            if (outerClass != null && !outerClass.isInterface()) {
+                outerClassName = outerClass.getBinaryName();
+            }
 
-			Class<?> superClass = target.getSuperclass();
-			if (superClass != null && !superClass.isInterface())
-				superClassName = superClass.getName();
+            isStaticClass = Modifier.isStatic(tb.getModifiers());
+        } else {
+            Class<?> target = classLoader.loadClass(className);
+            Method[] mds = target.getDeclaredMethods();
+            methods = Helper.getMethodInfos(mds);
 
-			Class<?> outerClass = target.getDeclaringClass();
-			if (outerClass != null && !outerClass.isInterface())
-				outerClassName = outerClass.getName();
+            Class<?> superClass = target.getSuperclass();
+            if (superClass != null && !superClass.isInterface()) {
+                superClassName = superClass.getName();
+            }
 
-			isStaticClass = Modifier.isStatic(target.getModifiers());
-		}
-		declaredMethodMap.put(className, methods);
+            Class<?> outerClass = target.getDeclaringClass();
+            if (outerClass != null && !outerClass.isInterface()) {
+                outerClassName = outerClass.getName();
+            }
 
-		Map<String, MethodInfo> inheritedMethods = new HashMap<String, MethodInfo>();
-		if (superClassName != null) {
-			detectVisibleMethods(superClassName);
+            isStaticClass = Modifier.isStatic(target.getModifiers());
+        }
+        declaredMethodMap.put(className, methods);
 
-			Map<String, MethodInfo> declaredMethodsOfSuper = declaredMethodMap.get(superClassName);
-			Map<String, MethodInfo> inheritedMethodsOfSuper = inheritedMethodMap.get(superClassName);
+        Map<String, MethodInfo> inheritedMethods = new HashMap<String, MethodInfo>();
+        if (superClassName != null) {
+            detectVisibleMethods(superClassName);
 
-			collectInheritedMethods(inheritedMethodsOfSuper, inheritedMethods, className, superClassName);
-			collectInheritedMethods(declaredMethodsOfSuper, inheritedMethods, className, superClassName);
-		}
+            Map<String, MethodInfo> declaredMethodsOfSuper = declaredMethodMap.get(superClassName);
+            Map<String, MethodInfo> inheritedMethodsOfSuper = inheritedMethodMap.get(superClassName);
 
-		HashMap<String, MethodInfo> outerMethods = new HashMap<String, MethodInfo>();
-		if (outerClassName != null) {
-			detectVisibleMethods(outerClassName);
+            collectInheritedMethods(inheritedMethodsOfSuper, inheritedMethods, className, superClassName);
+            collectInheritedMethods(declaredMethodsOfSuper, inheritedMethods, className, superClassName);
+        }
 
-			Map<String, MethodInfo> declaredMethodsOfOuter = declaredMethodMap.get(outerClassName);
-			Map<String, MethodInfo> inheritedMethodsOfOuter = inheritedMethodMap.get(outerClassName);
-			Map<String, MethodInfo> outerMethodsOfOuter = outerMethodMap.get(outerClassName);
+        HashMap<String, MethodInfo> outerMethods = new HashMap<String, MethodInfo>();
+        if (outerClassName != null) {
+            detectVisibleMethods(outerClassName);
 
-			collectOuterMethods(outerMethodsOfOuter, outerMethods, isStaticClass);
-			collectOuterMethods(inheritedMethodsOfOuter, outerMethods, isStaticClass);
-			collectOuterMethods(declaredMethodsOfOuter, outerMethods, isStaticClass);
+            Map<String, MethodInfo> declaredMethodsOfOuter = declaredMethodMap.get(outerClassName);
+            Map<String, MethodInfo> inheritedMethodsOfOuter = inheritedMethodMap.get(outerClassName);
+            Map<String, MethodInfo> outerMethodsOfOuter = outerMethodMap.get(outerClassName);
 
-			filterOuterMethods(outerMethods, methods, inheritedMethods);
+            collectOuterMethods(outerMethodsOfOuter, outerMethods, isStaticClass);
+            collectOuterMethods(inheritedMethodsOfOuter, outerMethods, isStaticClass);
+            collectOuterMethods(declaredMethodsOfOuter, outerMethods, isStaticClass);
 
-		}
+            filterOuterMethods(outerMethods, methods, inheritedMethods);
 
-		inheritedMethodMap.put(className, inheritedMethods);
-		outerMethodMap.put(className, outerMethods);
-	}
+        }
 
-	void filterOuterMethods(Map<String, MethodInfo> outerMethods, Map<String, MethodInfo> methods,
-			Map<String, MethodInfo> inheritedMethods) {
-		Iterator<String> iterator = outerMethods.keySet().iterator();
-		while (iterator.hasNext()) {
-			String key = (String) iterator.next();
-			if (containsMethodName(key, methods) || containsMethodName(key, inheritedMethods))
-				iterator.remove();
-		}
-	}
+        inheritedMethodMap.put(className, inheritedMethods);
+        outerMethodMap.put(className, outerMethods);
+    }
 
-	boolean containsMethodName(String key, Map<String, MethodInfo> methods) {
-		String methodName = Helper.getMethodName(key);
+    void filterOuterMethods(Map<String, MethodInfo> outerMethods, Map<String, MethodInfo> methods,
+            Map<String, MethodInfo> inheritedMethods) {
+        Iterator<String> iterator = outerMethods.keySet().iterator();
+        while (iterator.hasNext()) {
+            String key = (String) iterator.next();
+            if (containsMethodName(key, methods) || containsMethodName(key, inheritedMethods)) {
+                iterator.remove();
+            }
+        }
+    }
 
-		for (String str : methods.keySet()) {
-			String name = Helper.getMethodName(str);
-			if (name.equals(methodName))
-				return true;
-		}
-		return false;
-	}
+    boolean containsMethodName(String key, Map<String, MethodInfo> methods) {
+        String methodName = Helper.getMethodName(key);
 
-	void collectInheritedMethods(Map<String, MethodInfo> map, Map<String, MethodInfo> inheritedMethods,
-			String className, String superClassName) {
-		for (Map.Entry<String, MethodInfo> entry : map.entrySet()) {
-			boolean flag1 = Helper.isPublicMethod(entry.getValue());
-			boolean flag2 = Helper.isProtectedMethod(entry.getValue());
-			boolean flag3 = Helper.isPackagePrivateMethod(entry.getValue())
-					&& Helper.isInSamePackage(className, superClassName);
+        for (String str : methods.keySet()) {
+            String name = Helper.getMethodName(str);
+            if (name.equals(methodName)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
-			if (flag1 || flag2 || flag3)
-				inheritedMethods.put(entry.getKey(), entry.getValue());
-		}
-	}
+    void collectInheritedMethods(Map<String, MethodInfo> map, Map<String, MethodInfo> inheritedMethods,
+            String className, String superClassName) {
+        for (Map.Entry<String, MethodInfo> entry : map.entrySet()) {
+            boolean flag1 = Helper.isPublicMethod(entry.getValue());
+            boolean flag2 = Helper.isProtectedMethod(entry.getValue());
+            boolean flag3 = Helper.isPackagePrivateMethod(entry.getValue())
+                    && Helper.isInSamePackage(className, superClassName);
 
-	void collectOuterMethods(Map<String, MethodInfo> map, Map<String, MethodInfo> outerMethods, boolean isStaticClass) {
+            if (flag1 || flag2 || flag3) {
+                inheritedMethods.put(entry.getKey(), entry.getValue());
+            }
+        }
+    }
 
-		if (!isStaticClass) {
-			for (Map.Entry<String, MethodInfo> entry : map.entrySet())
-				outerMethods.put(entry.getKey(), entry.getValue());
-		} else {
-			for (Map.Entry<String, MethodInfo> entry : map.entrySet()) {
-				if (Helper.isStaticMethod(entry.getValue()))
-					outerMethods.put(entry.getKey(), entry.getValue());
-			}
-		}
-	}
+    void collectOuterMethods(Map<String, MethodInfo> map, Map<String, MethodInfo> outerMethods, boolean isStaticClass) {
 
-	Map<String, MethodInfo> getStaticMethods(Map<String, MethodInfo> methods) {
-		Map<String, MethodInfo> staticMethods = new HashMap<String, MethodInfo>();
+        if (!isStaticClass) {
+            for (Map.Entry<String, MethodInfo> entry : map.entrySet()) {
+                outerMethods.put(entry.getKey(), entry.getValue());
+            }
+        } else {
+            for (Map.Entry<String, MethodInfo> entry : map.entrySet()) {
+                if (Helper.isStaticMethod(entry.getValue())) {
+                    outerMethods.put(entry.getKey(), entry.getValue());
+                }
+            }
+        }
+    }
 
-		for (Map.Entry<String, MethodInfo> entry : methods.entrySet()) {
-			if (Helper.isStaticMethod(entry.getValue()))
-				staticMethods.put(entry.getKey(), entry.getValue());
-		}
+    Map<String, MethodInfo> getStaticMethods(Map<String, MethodInfo> methods) {
+        Map<String, MethodInfo> staticMethods = new HashMap<String, MethodInfo>();
 
-		return staticMethods;
-	}
+        for (Map.Entry<String, MethodInfo> entry : methods.entrySet()) {
+            if (Helper.isStaticMethod(entry.getValue())) {
+                staticMethods.put(entry.getKey(), entry.getValue());
+            }
+        }
+
+        return staticMethods;
+    }
 
 }

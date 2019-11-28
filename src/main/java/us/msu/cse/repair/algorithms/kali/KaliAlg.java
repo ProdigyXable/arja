@@ -4,7 +4,7 @@ import us.msu.cse.repair.core.AbstractRepairAlgorithm;
 
 public class KaliAlg extends AbstractRepairAlgorithm {
 
-	public KaliAlg(Kali problem) throws Exception {
-		algorithm = new KaliAlgInterface(problem);
-	}
+    public KaliAlg(Kali problem) throws Exception {
+        algorithm = new KaliAlgInterface(problem);
+    }
 }

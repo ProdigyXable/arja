@@ -1,48 +1,50 @@
 package us.msu.cse.repair.core.parser;
 
 public class LCNode {
-	String className;
-	int lineNumber;
 
-	public LCNode(String className, int lineNumber) {
-		this.className = className;
-		this.lineNumber = lineNumber;
-	}
+    String className;
+    int lineNumber;
 
-	public String getClassName() {
-		return className;
-	}
+    public LCNode(String className, int lineNumber) {
+        this.className = className;
+        this.lineNumber = lineNumber;
+    }
 
-	public int getLineNumber() {
-		return lineNumber;
-	}
+    public String getClassName() {
+        return className;
+    }
 
-	public void setClassName(String className) {
-		this.className = className;
-	}
+    public int getLineNumber() {
+        return lineNumber;
+    }
 
-	public void setLineNumber(int lineNumber) {
-		this.lineNumber = lineNumber;
-	}
+    public void setClassName(String className) {
+        this.className = className;
+    }
 
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof LCNode))
-			return false;
-		LCNode node = (LCNode) o;
-		String a = this.className + "#" + this.lineNumber;
-		String b = node.className + "#" + node.lineNumber;
-		return a.equals(b);
-	}
+    public void setLineNumber(int lineNumber) {
+        this.lineNumber = lineNumber;
+    }
 
-	@Override
-	public int hashCode() {
-		String a = this.className + "#" + this.lineNumber;
-		return a.hashCode();
-	}
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof LCNode)) {
+            return false;
+        }
+        LCNode node = (LCNode) o;
+        String a = this.className + "#" + this.lineNumber;
+        String b = node.className + "#" + node.lineNumber;
+        return a.equals(b);
+    }
 
-	@Override
-	public String toString() {
-		return this.className + "#" + this.lineNumber;
-	}
+    @Override
+    public int hashCode() {
+        String a = this.className + "#" + this.lineNumber;
+        return a.hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return this.className + "#" + this.lineNumber;
+    }
 }

@@ -5,7 +5,8 @@ import us.msu.cse.repair.ec.algorithms.GA;
 import us.msu.cse.repair.ec.problems.ArjaProblem;
 
 public class ArjaSingle extends AbstractRepairAlgorithm {
-	public ArjaSingle(ArjaProblem problem) throws Exception {
-		algorithm = new GA(problem);
-	}
+
+    public ArjaSingle(ArjaProblem problem) throws Exception {
+        algorithm = new GA(problem);
+    }
 }

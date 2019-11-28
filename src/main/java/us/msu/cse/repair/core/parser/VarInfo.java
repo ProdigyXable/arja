@@ -2,60 +2,64 @@ package us.msu.cse.repair.core.parser;
 
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
-
 import us.msu.cse.repair.core.util.Helper;
 
 public class VarInfo {
-	String typeName;
 
-	IVariableBinding varBinding;
+    String typeName;
 
-	int mod;
+    IVariableBinding varBinding;
 
-	public VarInfo(String typeName, IVariableBinding varBinding, int mod) {
-		this.typeName = typeName;
-		this.varBinding = varBinding;
-		this.mod = mod;
-	}
+    int mod;
 
-	public String getTypeName() {
-		return this.typeName;
-	}
+    public VarInfo(String typeName, IVariableBinding varBinding, int mod) {
+        this.typeName = typeName;
+        this.varBinding = varBinding;
+        this.mod = mod;
+    }
 
-	public IVariableBinding getVariableBinding() {
-		return this.varBinding;
-	}
+    public String getTypeName() {
+        return this.typeName;
+    }
 
-	public ITypeBinding getTypeBinding() {
-		return this.varBinding.getVariableDeclaration().getType();
-	}
+    public IVariableBinding getVariableBinding() {
+        return this.varBinding;
+    }
 
-	public int getModifiers() {
-		return mod;
-	}
+    public ITypeBinding getTypeBinding() {
+        return this.varBinding.getVariableDeclaration().getType();
+    }
 
-	public boolean isStronglyTypeMatched(VarInfo vi) {
-		if (typeName.equals(vi.getTypeName()))
-			return true;
+    public int getModifiers() {
+        return mod;
+    }
 
-		return false;
-	}
+    public boolean isStronglyTypeMatched(VarInfo vi) {
+        if (typeName.equals(vi.getTypeName())) {
+            return true;
+        }
 
-	public boolean isWeaklyTypeMatched(VarInfo vi) {
-		if (varBinding == null || vi.getVariableBinding() == null)
-			return false;
-		
-		ITypeBinding tb = vi.getTypeBinding();
-		ITypeBinding typeBinding = varBinding.getVariableDeclaration().getType();
+        return false;
+    }
 
-		if (tb != null && typeBinding != null) {
-			if (tb.isAssignmentCompatible(typeBinding))
-				return true;
+    public boolean isWeaklyTypeMatched(VarInfo vi) {
+        if (varBinding == null || vi.getVariableBinding() == null) {
+            return false;
+        }
 
-			if (varBinding.isParameter() && Helper.isSameParentType(tb, typeBinding))
-				return true;
-		}
+        ITypeBinding tb = vi.getTypeBinding();
+        ITypeBinding typeBinding = varBinding.getVariableDeclaration().getType();
 
-		return false;
-	}
+        if (tb != null && typeBinding != null) {
+            if (tb.isAssignmentCompatible(typeBinding)) {
+                return true;
+            }
+
+            if (varBinding.isParameter() && Helper.isSameParentType(tb, typeBinding)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }

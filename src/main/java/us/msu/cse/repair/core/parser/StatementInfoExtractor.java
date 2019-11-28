@@ -4,83 +4,82 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.eclipse.jdt.core.dom.Statement;
-
 import us.msu.cse.repair.core.util.visitors.StatementInfoASTVisitor;
 
 public class StatementInfoExtractor {
-	Statement statement;
 
-	Map<String, VarInfo> vars;
-	Map<String, VarInfo> thisVars;
-	Map<String, VarInfo> superVars;
+    Statement statement;
 
-	Map<String, MethodInfo> methods;
-	Map<String, MethodInfo> thisMethods;
-	Map<String, MethodInfo> superMethods;
+    Map<String, VarInfo> vars;
+    Map<String, VarInfo> thisVars;
+    Map<String, VarInfo> superVars;
 
-	List<Integer> varIDs;
-	Map<String, List<Integer>> methodIDs;
-	Map<String, List<Integer>> superMethodIDs;
+    Map<String, MethodInfo> methods;
+    Map<String, MethodInfo> thisMethods;
+    Map<String, MethodInfo> superMethods;
 
-	public StatementInfoExtractor(Statement statement) {
-		this.statement = statement;
+    List<Integer> varIDs;
+    Map<String, List<Integer>> methodIDs;
+    Map<String, List<Integer>> superMethodIDs;
 
-		this.vars = new HashMap<String, VarInfo>();
-		this.thisVars = new HashMap<String, VarInfo>();
-		this.superVars = new HashMap<String, VarInfo>();
+    public StatementInfoExtractor(Statement statement) {
+        this.statement = statement;
 
-		this.methods = new HashMap<String, MethodInfo>();
-		this.thisMethods = new HashMap<String, MethodInfo>();
-		this.superMethods = new HashMap<String, MethodInfo>();
+        this.vars = new HashMap<String, VarInfo>();
+        this.thisVars = new HashMap<String, VarInfo>();
+        this.superVars = new HashMap<String, VarInfo>();
 
-		this.varIDs = new ArrayList<Integer>();
+        this.methods = new HashMap<String, MethodInfo>();
+        this.thisMethods = new HashMap<String, MethodInfo>();
+        this.superMethods = new HashMap<String, MethodInfo>();
 
-		methodIDs = new HashMap<String, List<Integer>>();
-		superMethodIDs = new HashMap<String, List<Integer>>();
-	}
+        this.varIDs = new ArrayList<Integer>();
 
-	public void extract() {
-		StatementInfoASTVisitor visitor = new StatementInfoASTVisitor(vars, thisVars, superVars, methods, thisMethods,
-				superMethods, varIDs, methodIDs, superMethodIDs);
-		statement.accept(visitor);
-	}
+        methodIDs = new HashMap<String, List<Integer>>();
+        superMethodIDs = new HashMap<String, List<Integer>>();
+    }
 
-	public List<Integer> getVarIDs() {
-		return varIDs;
-	}
+    public void extract() {
+        StatementInfoASTVisitor visitor = new StatementInfoASTVisitor(vars, thisVars, superVars, methods, thisMethods,
+                superMethods, varIDs, methodIDs, superMethodIDs);
+        statement.accept(visitor);
+    }
 
-	public Map<String, List<Integer>> getMethodIDs() {
-		return methodIDs;
-	}
+    public List<Integer> getVarIDs() {
+        return varIDs;
+    }
 
-	public Map<String, List<Integer>> getSuperMethodIDs() {
-		return superMethodIDs;
-	}
+    public Map<String, List<Integer>> getMethodIDs() {
+        return methodIDs;
+    }
 
-	public Map<String, VarInfo> getVars() {
-		return vars;
-	}
+    public Map<String, List<Integer>> getSuperMethodIDs() {
+        return superMethodIDs;
+    }
 
-	public Map<String, VarInfo> getThisVars() {
-		return thisVars;
-	}
+    public Map<String, VarInfo> getVars() {
+        return vars;
+    }
 
-	public Map<String, VarInfo> getSuperVars() {
-		return superVars;
-	}
+    public Map<String, VarInfo> getThisVars() {
+        return thisVars;
+    }
 
-	public Map<String, MethodInfo> getMethods() {
-		return methods;
-	}
+    public Map<String, VarInfo> getSuperVars() {
+        return superVars;
+    }
 
-	public Map<String, MethodInfo> getThisMethods() {
-		return thisMethods;
-	}
+    public Map<String, MethodInfo> getMethods() {
+        return methods;
+    }
 
-	public Map<String, MethodInfo> getSuperMethods() {
-		return superMethods;
-	}
+    public Map<String, MethodInfo> getThisMethods() {
+        return thisMethods;
+    }
+
+    public Map<String, MethodInfo> getSuperMethods() {
+        return superMethods;
+    }
 
 }

@@ -1,91 +1,93 @@
 package us.msu.cse.repair.core.faultlocalizer;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-
-import java.util.HashMap;
-import java.util.HashSet;
-
-import java.util.Map;
-import java.util.Set;
-
 import com.gzoltar.core.GZoltar;
 import com.gzoltar.core.components.Statement;
 import com.gzoltar.core.instr.testing.TestResult;
-
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import us.msu.cse.repair.core.parser.LCNode;
 
 public class GZoltarFaultLocalizer implements IFaultLocalizer {
-	Set<String> positiveTestMethods;
-	Set<String> negativeTestMethods;
 
-	Map<LCNode, Double> faultyLines;
+    Set<String> positiveTestMethods;
+    Set<String> negativeTestMethods;
 
-	public GZoltarFaultLocalizer(Set<String> binJavaClasses, Set<String> binExecuteTestClasses, String binJavaDir,
-			String binTestDir, Set<String> dependences) throws FileNotFoundException, IOException {
-		String projLoc = new File("").getAbsolutePath();
-		GZoltar gz = new GZoltar(projLoc);
+    Map<LCNode, Double> faultyLines;
 
-		gz.getClasspaths().add(binJavaDir);
-		gz.getClasspaths().add(binTestDir);
+    public GZoltarFaultLocalizer(Set<String> binJavaClasses, Set<String> binExecuteTestClasses, String binJavaDir,
+            String binTestDir, Set<String> dependences) throws FileNotFoundException, IOException {
+        String projLoc = new File("").getAbsolutePath();
+        GZoltar gz = new GZoltar(projLoc);
 
-		if (dependences != null)
-			gz.getClasspaths().addAll(dependences);
+        gz.getClasspaths().add(binJavaDir);
+        gz.getClasspaths().add(binTestDir);
 
-		for (String testClass : binExecuteTestClasses)
-			gz.addTestToExecute(testClass);
+        if (dependences != null) {
+            gz.getClasspaths().addAll(dependences);
+        }
 
-		for (String javaClass : binJavaClasses)
-			gz.addClassToInstrument(javaClass);
+        for (String testClass : binExecuteTestClasses) {
+            gz.addTestToExecute(testClass);
+        }
 
-		gz.run();
+        for (String javaClass : binJavaClasses) {
+            gz.addClassToInstrument(javaClass);
+        }
 
-		positiveTestMethods = new HashSet<String>();
-		negativeTestMethods = new HashSet<String>();
+        gz.run();
 
-		for (TestResult tr : gz.getTestResults()) {
-			String testName = tr.getName();
-			if (tr.wasSuccessful())
-				positiveTestMethods.add(testName);
-			else {
-				if (!tr.getName().startsWith("junit.framework"))
-					negativeTestMethods.add(testName);
-			}
-		}
+        positiveTestMethods = new HashSet<String>();
+        negativeTestMethods = new HashSet<String>();
 
-		faultyLines = new HashMap<LCNode, Double>();
-		for (Statement gzoltarStatement : gz.getSuspiciousStatements()) {
-			String className = gzoltarStatement.getMethod().getParent().getLabel();
-			int lineNumber = gzoltarStatement.getLineNumber();
+        for (TestResult tr : gz.getTestResults()) {
+            String testName = tr.getName();
+            if (tr.wasSuccessful()) {
+                positiveTestMethods.add(testName);
+            } else {
+                if (!tr.getName().startsWith("junit.framework")) {
+                    negativeTestMethods.add(testName);
+                }
+            }
+        }
 
-			double suspValue = gzoltarStatement.getSuspiciousness();
+        faultyLines = new HashMap<LCNode, Double>();
+        for (Statement gzoltarStatement : gz.getSuspiciousStatements()) {
+            String className = gzoltarStatement.getMethod().getParent().getLabel();
+            int lineNumber = gzoltarStatement.getLineNumber();
 
-			LCNode lcNode = new LCNode(className, lineNumber);
-			faultyLines.put(lcNode, suspValue);
-		}
-	}
+            double suspValue = gzoltarStatement.getSuspiciousness();
 
-	@Override
-	public Map<LCNode, Double> searchSuspicious(double thr) {
-		// TODO Auto-generated method stub
-		Map<LCNode, Double> partFaultyLines = new HashMap<LCNode, Double>();
-		for (Map.Entry<LCNode, Double> entry : faultyLines.entrySet()) {
-			if (entry.getValue() >= thr)
-				partFaultyLines.put(entry.getKey(), entry.getValue());
-		}
-		return partFaultyLines;
-	}
+            LCNode lcNode = new LCNode(className, lineNumber);
+            faultyLines.put(lcNode, suspValue);
+        }
+    }
 
-	@Override
-	public Set<String> getPositiveTests() {
-		// TODO Auto-generated method stub
-		return this.positiveTestMethods;
-	}
+    @Override
+    public Map<LCNode, Double> searchSuspicious(double thr) {
+        // TODO Auto-generated method stub
+        Map<LCNode, Double> partFaultyLines = new HashMap<LCNode, Double>();
+        for (Map.Entry<LCNode, Double> entry : faultyLines.entrySet()) {
+            if (entry.getValue() >= thr) {
+                partFaultyLines.put(entry.getKey(), entry.getValue());
+            }
+        }
+        return partFaultyLines;
+    }
 
-	@Override
-	public Set<String> getNegativeTests() {
-		// TODO Auto-generated method stub
-		return this.negativeTestMethods;
-	}
+    @Override
+    public Set<String> getPositiveTests() {
+        // TODO Auto-generated method stub
+        return this.positiveTestMethods;
+    }
+
+    @Override
+    public Set<String> getNegativeTests() {
+        // TODO Auto-generated method stub
+        return this.negativeTestMethods;
+    }
 }

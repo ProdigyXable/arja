@@ -3,17 +3,18 @@ package us.msu.cse.repair.core.testexecutors;
 import java.util.Set;
 
 public interface ITestExecutor {
-	public boolean runTests() throws Exception;
 
-	public int getFailureCountInPositive();
+    public boolean runTests() throws Exception;
 
-	public int getFailureCountInNegative();
+    public int getFailureCountInPositive();
 
-	public double getRatioOfFailuresInPositive();
+    public int getFailureCountInNegative();
 
-	public double getRatioOfFailuresInNegative();
+    public double getRatioOfFailuresInPositive();
 
-	public boolean isExceptional();
+    public double getRatioOfFailuresInNegative();
 
-	public Set<String> getFailedTests();
+    public boolean isExceptional();
+
+    public Set<String> getFailedTests();
 }

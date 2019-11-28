@@ -2,133 +2,133 @@ package us.msu.cse.repair.core.parser;
 
 import java.util.List;
 import java.util.Map;
-
 import org.eclipse.jdt.core.dom.Statement;
 
 public class ModificationPoint {
-	Statement statement;
 
-	String sourceFilePath;
+    Statement statement;
 
-	double suspValue;
-	LCNode lcNode;
+    String sourceFilePath;
 
-	List<Statement> ingredients;
+    double suspValue;
+    LCNode lcNode;
 
-	Map<String, VarInfo> declaredFields;
-	Map<String, VarInfo> inheritedFields;
-	Map<String, VarInfo> outerFields;
+    List<Statement> ingredients;
 
-	Map<String, VarInfo> localVars;
+    Map<String, VarInfo> declaredFields;
+    Map<String, VarInfo> inheritedFields;
+    Map<String, VarInfo> outerFields;
 
-	Map<String, MethodInfo> delcaredMethods;
-	Map<String, MethodInfo> inheritedMethods;
-	Map<String, MethodInfo> outerMethods;
+    Map<String, VarInfo> localVars;
 
-	boolean isInStaticMethod;
+    Map<String, MethodInfo> delcaredMethods;
+    Map<String, MethodInfo> inheritedMethods;
+    Map<String, MethodInfo> outerMethods;
 
-	public void setSuspValue(double suspValue) {
-		this.suspValue = suspValue;
-	}
+    boolean isInStaticMethod;
 
-	public double getSuspValue() {
-		return this.suspValue;
-	}
+    public void setSuspValue(double suspValue) {
+        this.suspValue = suspValue;
+    }
 
-	public void setSourceFilePath(String sourceFilePath) {
-		this.sourceFilePath = sourceFilePath;
-	}
+    public double getSuspValue() {
+        return this.suspValue;
+    }
 
-	public String getSourceFilePath() {
-		return this.sourceFilePath;
-	}
+    public void setSourceFilePath(String sourceFilePath) {
+        this.sourceFilePath = sourceFilePath;
+    }
 
-	public void setStatement(Statement statement) {
-		this.statement = statement;
-	}
+    public String getSourceFilePath() {
+        return this.sourceFilePath;
+    }
 
-	public Statement getStatement() {
-		return this.statement;
-	}
+    public void setStatement(Statement statement) {
+        this.statement = statement;
+    }
 
-	public void setLCNode(LCNode lcNode) {
-		this.lcNode = lcNode;
-	}
+    public Statement getStatement() {
+        return this.statement;
+    }
 
-	public LCNode getLCNode() {
-		return this.lcNode;
-	}
+    public void setLCNode(LCNode lcNode) {
+        this.lcNode = lcNode;
+    }
 
-	public void setIngredients(List<Statement> ingredients) {
-		this.ingredients = ingredients;
-	}
+    public LCNode getLCNode() {
+        return this.lcNode;
+    }
 
-	public List<Statement> getIngredients() {
-		return this.ingredients;
-	}
+    public void setIngredients(List<Statement> ingredients) {
+        this.ingredients = ingredients;
+    }
 
-	public void setDeclaredFields(Map<String, VarInfo> declaredFields) {
-		this.declaredFields = declaredFields;
-	}
+    public List<Statement> getIngredients() {
+        return this.ingredients;
+    }
 
-	public Map<String, VarInfo> getDeclaredFields() {
-		return this.declaredFields;
-	}
+    public void setDeclaredFields(Map<String, VarInfo> declaredFields) {
+        this.declaredFields = declaredFields;
+    }
 
-	public void setInheritedFields(Map<String, VarInfo> inheritedFields) {
-		this.inheritedFields = inheritedFields;
-	}
+    public Map<String, VarInfo> getDeclaredFields() {
+        return this.declaredFields;
+    }
 
-	public Map<String, VarInfo> getInheritedFields() {
-		return this.inheritedFields;
-	}
+    public void setInheritedFields(Map<String, VarInfo> inheritedFields) {
+        this.inheritedFields = inheritedFields;
+    }
 
-	public void setOuterFields(Map<String, VarInfo> outerFields) {
-		this.outerFields = outerFields;
-	}
+    public Map<String, VarInfo> getInheritedFields() {
+        return this.inheritedFields;
+    }
 
-	public Map<String, VarInfo> getOuterFields() {
-		return this.outerFields;
-	}
+    public void setOuterFields(Map<String, VarInfo> outerFields) {
+        this.outerFields = outerFields;
+    }
 
-	public void setDeclaredMethods(Map<String, MethodInfo> declaredMethods) {
-		this.delcaredMethods = declaredMethods;
-	}
+    public Map<String, VarInfo> getOuterFields() {
+        return this.outerFields;
+    }
 
-	public Map<String, MethodInfo> getDeclaredMethods() {
-		return this.delcaredMethods;
-	}
+    public void setDeclaredMethods(Map<String, MethodInfo> declaredMethods) {
+        this.delcaredMethods = declaredMethods;
+    }
 
-	public void setInheritedMethods(Map<String, MethodInfo> inheritedMethods) {
-		this.inheritedMethods = inheritedMethods;
-	}
+    public Map<String, MethodInfo> getDeclaredMethods() {
+        return this.delcaredMethods;
+    }
 
-	public Map<String, MethodInfo> getInheritedMethods() {
-		return this.inheritedMethods;
-	}
+    public void setInheritedMethods(Map<String, MethodInfo> inheritedMethods) {
+        this.inheritedMethods = inheritedMethods;
+    }
 
-	public void setOuterMethods(Map<String, MethodInfo> outerMethods) {
-		this.outerMethods = outerMethods;
-	}
+    public Map<String, MethodInfo> getInheritedMethods() {
+        return this.inheritedMethods;
+    }
 
-	public Map<String, MethodInfo> getOuterMethods() {
-		return this.outerMethods;
-	}
+    public void setOuterMethods(Map<String, MethodInfo> outerMethods) {
+        this.outerMethods = outerMethods;
+    }
 
-	public void setLocalVars(Map<String, VarInfo> localVars) {
-		this.localVars = localVars;
-	}
+    public Map<String, MethodInfo> getOuterMethods() {
+        return this.outerMethods;
+    }
 
-	public Map<String, VarInfo> getLocalVars() {
-		return this.localVars;
-	}
+    public void setLocalVars(Map<String, VarInfo> localVars) {
+        this.localVars = localVars;
+    }
 
-	public void setInStaticMethod(boolean isInStaticMethod) {
-		this.isInStaticMethod = isInStaticMethod;
-	}
+    public Map<String, VarInfo> getLocalVars() {
+        return this.localVars;
+    }
 
-	public boolean isInStaticMethod() {
-		return this.isInStaticMethod;
-	}
+    public void setInStaticMethod(boolean isInStaticMethod) {
+        this.isInStaticMethod = isInStaticMethod;
+    }
+
+    public boolean isInStaticMethod() {
+        return this.isInStaticMethod;
+    }
 
 }
