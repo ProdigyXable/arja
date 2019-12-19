@@ -62,7 +62,7 @@ import us.msu.cse.repair.core.util.CustomURLClassLoader;
 import us.msu.cse.repair.core.util.Helper;
 import us.msu.cse.repair.core.util.IO;
 import us.msu.cse.repair.core.util.Patch;
-import utdallas.edu.profl.replicate.enums.PatchCategory;
+import utdallas.edu.profl.replicate.patchcategory.PatchCategory;
 import utdallas.edu.profl.replicate.util.MethodLineCoverageInterface;
 import utdallas.edu.profl.replicate.util.ProflResultRanking;
 import utdallas.edu.profl.replicate.util.TestLineCoverageInterface;
@@ -156,6 +156,8 @@ public abstract class AbstractRepairProblem extends Problem {
     protected MethodLineCoverageInterface proflMethodCoverage;
     protected ProflResultRanking profl;
 
+    protected List<String> solutionMessages = new LinkedList<>();
+    
     @SuppressWarnings("unchecked")
     public AbstractRepairProblem(Map<String, Object> parameters) throws Exception {
         binJavaDir = (String) parameters.get("binJavaDir");
@@ -808,14 +810,14 @@ public abstract class AbstractRepairProblem extends Problem {
         return finalTestsInfoPath;
     }
 
-    private List<String> getGroupedSusValues() {
-        Map<PatchCategory, Map<String, Double>> newSus = profl.getGroupedAggregatedSusValues();
+    private List<String> getProflSusValues() {
+        Map<PatchCategory, Map<String, Double>> newSus = profl.getProflSusValues();
         List<String> returnValue = new LinkedList();
 
         int groupedIndex = 0;
         for (PatchCategory pc : newSus.keySet()) {
             for (String key : newSus.get(pc).keySet()) {
-                String message = String.format("[%03d]|%.6f|[%s]|%s", ++groupedIndex, newSus.get(pc).get(key), pc.name(), key);
+                String message = String.format("[%03d]|%.6f|[%s]|%s", ++groupedIndex, newSus.get(pc).get(key), pc.getCategoryName(), key);
 
                 System.out.println(message);
                 returnValue.add(message);
@@ -844,7 +846,7 @@ public abstract class AbstractRepairProblem extends Problem {
 
     public void saveAggregatedSusValues() throws IOException {
         File file = new File(this.patchOutputRoot + File.separator + "aggregatedSusInfo.profl");
-        FileUtils.writeLines(file, this.getGroupedSusValues(), "\n", true);
+        FileUtils.writeLines(file, this.getProflSusValues(), "\n", true);
     }
 
     public void saveGeneralSusValues() throws IOException {

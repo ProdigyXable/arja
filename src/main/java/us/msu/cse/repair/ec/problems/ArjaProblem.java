@@ -30,7 +30,7 @@ import us.msu.cse.repair.core.parser.ModificationPoint;
 import us.msu.cse.repair.core.testexecutors.ITestExecutor;
 import us.msu.cse.repair.core.util.IO;
 import us.msu.cse.repair.ec.representation.ArrayIntAndBinarySolutionType;
-import utdallas.edu.profl.replicate.enums.PatchCategory;
+import utdallas.edu.profl.replicate.patchcategory.DefaultPatchCategories;
 
 public class ArjaProblem extends AbstractRepairProblem {
 
@@ -45,7 +45,7 @@ public class ArjaProblem extends AbstractRepairProblem {
 
     Boolean miFilterRule;
 
-    List<String> solutionMessages = new LinkedList<>();
+    
 
     public ArjaProblem(Map<String, Object> parameters) throws Exception {
         super(parameters);
@@ -130,7 +130,7 @@ public class ArjaProblem extends AbstractRepairProblem {
 
         Map<String, ASTRewrite> astRewriters = new HashMap<String, ASTRewrite>();
 
-        Map<Integer, Double> selectedMP = new HashMap<Integer, Double>();
+        Map<Integer, Double> selectedMP = new HashMap<>();
         Map<Integer, LCNode> solutionInfo = new HashMap<>();
 
         for (int i = 0; i < size; i++) {
@@ -223,7 +223,7 @@ public class ArjaProblem extends AbstractRepairProblem {
         }
 
         try {
-            File file = new File(this.patchOutputRoot + "/PatchTestInfo/", "Patch_" + globalID + ".tests");
+            File file = new File(this.patchOutputRoot + "/PatchTestInfo-Arja/", "Patch_" + globalID + ".tests");
             Collections.sort(solutionMessages);
             FileUtils.writeLines(file, solutionMessages, "\n", true);
         } catch (IOException e) {
@@ -356,24 +356,24 @@ public class ArjaProblem extends AbstractRepairProblem {
                 String solutionMessage = String.format("Modified method %s at lineNumber=%d",
                         fullMethodName,
                         lcn.getLineNumber());
-                System.out.println(solutionMessage);
                 solutionMessages.add(solutionMessage);
                 modifiedMethods.put(fullMethodName, profl.getGeneralMethodSusValues().get(fullMethodName));
+                System.out.println(solutionMessage);
             }
 
             String solutionMessage;
             if (failedTests.isEmpty()) {
                 solutionMessage = "PatchCategory = CleanFix";
-                profl.addCategoryEntry(PatchCategory.CleanAllFix, modifiedMethods);
+                profl.addCategoryEntry(DefaultPatchCategories.CLEAN_FIX, modifiedMethods);
             } else if (!failPassTests.isEmpty() || !passFailTests.isEmpty()) {
                 solutionMessage = "PatchCategory = NoisyFix";
-                profl.addCategoryEntry(PatchCategory.NoisyAllFix, modifiedMethods);
+                profl.addCategoryEntry(DefaultPatchCategories.NOISY_FIX, modifiedMethods);
             } else if (passFailTests.isEmpty() && failPassTests.isEmpty()) {
                 solutionMessage = "PatchCategory = NoneFix";
-                profl.addCategoryEntry(PatchCategory.NoneFix, modifiedMethods);
+                profl.addCategoryEntry(DefaultPatchCategories.NONE_FIX, modifiedMethods);
             } else {
                 solutionMessage = "PatchCategory = NegFix";
-                profl.addCategoryEntry(PatchCategory.NegFix, modifiedMethods);
+                profl.addCategoryEntry(DefaultPatchCategories.NEG_FIX, modifiedMethods);
             }
 
             System.out.println(solutionMessage);

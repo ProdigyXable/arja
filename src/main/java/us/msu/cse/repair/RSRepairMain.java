@@ -42,6 +42,11 @@ public class RSRepairMain {
         // Add the operators to the algorithm
         repairAlg.addOperator("mutation", mutation);
 
+        System.out.println("-------------------------------------");
+        problem.saveGeneralSusValues();
+        System.out.println("-------------------------------------");
         repairAlg.execute();
+        problem.saveAggregatedSusValues();
+        System.out.println("-------------------------------------");
     }
 }
