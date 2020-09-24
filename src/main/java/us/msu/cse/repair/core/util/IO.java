@@ -9,9 +9,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import javax.tools.JavaFileObject;
-import jmetal.core.Solution;
-import jmetal.encodings.variable.ArrayInt;
-import jmetal.encodings.variable.Binary;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jdt.core.dom.Statement;
 import us.msu.cse.repair.core.compiler.JavaFileObjectImpl;
@@ -89,6 +86,7 @@ public class IO {
         }
     }
 
+    /*
     public static void savePatch(List<Integer> opList, List<Integer> locList, List<Integer> ingredList,
             List<ModificationPoint> modificationPoints, List<List<String>> availableManipulations, String patchDir,
             int globalID) throws IOException {
@@ -127,11 +125,13 @@ public class IO {
             FileUtils.writeByteArrayToFile(file, data.getBytes(), true);
         }
     }
-
+     */
     public static void savePatch(List<Integer> opList, List<Integer> locList, List<Integer> ingredList,
             List<ModificationPoint> modificationPoints, List<List<String>> availableManipulations, String patchDir,
             int globalID, int evaluations, long estimatedTime) throws IOException {
-        File file = new File(patchDir, "Patch_" + globalID + ".txt");
+        File file = new File(String.format("%s/patches/%d/%d.txt", patchDir, globalID, globalID));
+        file.getParentFile().mkdir();
+
         if (file.exists()) {
             file.delete();
         }
@@ -171,6 +171,7 @@ public class IO {
         FileUtils.writeByteArrayToFile(file, info.getBytes(), true);
     }
 
+    /*
     public static void savePatch(Solution solution, List<ModificationPoint> modificationPoints,
             List<List<String>> availableManipulations, List<Map.Entry<Integer, Double>> list, int numberOfEdits,
             String patchDir, int globalID) throws IOException {
@@ -209,7 +210,8 @@ public class IO {
             FileUtils.writeByteArrayToFile(file, data.getBytes(), true);
         }
     }
-
+     */
+ /*
     public static void savePatch(Solution solution, List<ModificationPoint> modificationPoints,
             String[] manipulationNames, String patchDir, int globalID) throws IOException {
         int[] var0 = ((ArrayInt) solution.getDecisionVariables()[0]).array_;
@@ -248,7 +250,7 @@ public class IO {
             FileUtils.writeByteArrayToFile(file, data.getBytes(), true);
         }
     }
-
+     */
     public static void saveCompiledClasses(Map<String, JavaFileObject> compiledClasses, File binWorkingDirFile)
             throws IOException {
         for (Map.Entry<String, JavaFileObject> entry : compiledClasses.entrySet()) {
@@ -263,7 +265,9 @@ public class IO {
 
     public static void savePatch(Map<String, String> modifiedJavaSources, String srcJavaDir,
             String patchDir, int globalID) throws IOException, InterruptedException {
-        File root = new File(patchDir, "Patch_" + globalID);
+        File root = new File(String.format("%s/patches/%d/", patchDir, globalID));
+        root.mkdirs();
+
         List<String> diffs = new ArrayList<>();
 
         for (Map.Entry<String, String> entry : modifiedJavaSources.entrySet()) {

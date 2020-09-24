@@ -43,10 +43,7 @@ public class RSRepairMain {
         repairAlg.addOperator("mutation", mutation);
 
         System.out.println("-------------------------------------");
-        problem.saveGeneralSusValues();
-        System.out.println("-------------------------------------");
         repairAlg.execute();
-        problem.saveAggregatedSusValues();
         System.out.println("-------------------------------------");
     }
 }

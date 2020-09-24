@@ -65,11 +65,8 @@ public class ArjaMain {
         repairAlg.addOperator("selection", selection);
 
         System.out.println("-------------------------------------");
-        problem.saveGeneralSusValues();
-        System.out.println("-------------------------------------");
         repairAlg.execute();
-        problem.saveAggregatedSusValues();
-        System.out.println("-------------------------------------");
+
 
     }
 }

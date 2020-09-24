@@ -1,6 +1,5 @@
 package us.msu.cse.repair.ec.problems;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -20,7 +19,6 @@ import jmetal.encodings.variable.ArrayInt;
 import jmetal.encodings.variable.Binary;
 import jmetal.util.Configuration;
 import jmetal.util.JMException;
-import org.apache.commons.io.FileUtils;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import us.msu.cse.repair.core.AbstractRepairProblem;
@@ -31,6 +29,7 @@ import us.msu.cse.repair.core.testexecutors.ITestExecutor;
 import us.msu.cse.repair.core.util.IO;
 import us.msu.cse.repair.ec.representation.ArrayIntAndBinarySolutionType;
 import utdallas.edu.profl.replicate.patchcategory.DefaultPatchCategories;
+import utdallas.edu.profl.replicate.patchcategory.PatchCategory;
 
 public class ArjaProblem extends AbstractRepairProblem {
 
@@ -44,8 +43,6 @@ public class ArjaProblem extends AbstractRepairProblem {
     String initializationStrategy;
 
     Boolean miFilterRule;
-
-    
 
     public ArjaProblem(Map<String, Object> parameters) throws Exception {
         super(parameters);
@@ -119,7 +116,6 @@ public class ArjaProblem extends AbstractRepairProblem {
 
     @Override
     public void evaluate(Solution solution) throws JMException {
-        solutionMessages.clear();
 
         System.out.println("-------------------------------------");
         System.out.println("One fitness evaluation starts...");
@@ -215,21 +211,6 @@ public class ArjaProblem extends AbstractRepairProblem {
             System.out.println("Compilation fails!");
         }
 
-        if (status) {
-            solutionMessages.add("Repair patch found");
-            save(solution, modifiedJavaSources, compiledClasses, list, numberOfEdits);
-        } else {
-            solutionMessages.add("Repair patch absent");
-        }
-
-        try {
-            File file = new File(this.patchOutputRoot + "/PatchTestInfo-Arja/", "Patch_" + globalID + ".tests");
-            Collections.sort(solutionMessages);
-            FileUtils.writeLines(file, solutionMessages, "\n", true);
-        } catch (IOException e) {
-            System.out.println("Error occured when writing logFile: " + e.getMessage());
-        }
-
         globalID++;
         evaluations++;
         System.out.println("One fitness evaluation is finished...");
@@ -257,7 +238,7 @@ public class ArjaProblem extends AbstractRepairProblem {
             if (addTestAdequatePatch(opList, locList, ingredList)) {
                 if (diffFormat) {
                     try {
-                        IO.savePatch(modifiedJavaSources, srcJavaDir, this.patchOutputRoot, globalID);
+                        IO.savePatch(modifiedJavaSources, srcJavaDir, this.patchOutputRoot, this.patchAttempts);
                     } catch (InterruptedException e) {
                         // TODO Auto-generated catch block
                         e.printStackTrace();
@@ -305,16 +286,12 @@ public class ArjaProblem extends AbstractRepairProblem {
 
             for (String s : failedTests) {
                 if (positiveTests.contains(s)) {
-                    String message = String.format("[PASS->FAIL] test case found: %s", s);
-                    //    System.out.println(message);
-                    solutionMessages.add(message);
+                    System.out.println(String.format("[PASS->FAIL] test case found: %s", s));
 
                     passPassTests.remove(s);
                     passFailTests.add(s);
                 } else if (negativeTests.contains(s)) {
-                    String message = String.format("[FAIL->FAIL] test case found: %s", s);
-                    //    System.out.println(message);
-                    solutionMessages.add(message);
+                    System.out.println(String.format("[FAIL->FAIL] test case found: %s", s));
 
                     failPassTests.remove(s);
                     failFailTests.add(s);
@@ -324,60 +301,45 @@ public class ArjaProblem extends AbstractRepairProblem {
             }
 
             for (String s : passPassTests) {
-                String message = String.format("[PASS->PASS] test case found: %s", s);
-                // System.out.println(message);
-                solutionMessages.add(message);
+                System.out.println(String.format("[PASS->PASS] test case found: %s", s));
             }
 
             for (String s : failPassTests) {
-                String message = String.format("[FAIL->PASS] test case found: %s", s);
-                // System.out.println(message);
-                solutionMessages.add(message);
-            }
-
-            double ratioOfFailuresInPositive = testExecutor.getRatioOfFailuresInPositive();
-            double ratioOfFailuresInNegative = testExecutor.getRatioOfFailuresInNegative();
-            double fitness = weight * testExecutor.getRatioOfFailuresInPositive() + testExecutor.getRatioOfFailuresInNegative();
-
-            System.out.println("Number of failed tests: " + (testExecutor.getFailureCountInNegative() + testExecutor.getFailureCountInPositive()));
-            System.out.println("Weighted failure rate: " + fitness);
-
-            if (numberOfObjectives == 1 || numberOfObjectives == 2) {
-                solution.setObjective(numberOfObjectives - 1, fitness);
-            } else {
-                solution.setObjective(1, ratioOfFailuresInPositive);
-                solution.setObjective(2, ratioOfFailuresInNegative);
+                System.out.println(String.format("[FAIL->PASS] test case found: %s", s));
             }
 
             Map<String, Double> modifiedMethods = new TreeMap<>();
 
             for (LCNode lcn : modifiedLines) {
-                String fullMethodName = proflMethodCoverage.lookup(lcn.getClassName(), lcn.getLineNumber());
-                String solutionMessage = String.format("Modified method %s at lineNumber=%d",
-                        fullMethodName,
-                        lcn.getLineNumber());
-                solutionMessages.add(solutionMessage);
+                String fullMethodName = profl.getMethodCoverage().lookup(lcn.getClassName(), lcn.getLineNumber());
+                String solutionMessage = String.format("Modified method %s at lineNumber=%d", fullMethodName, lcn.getLineNumber());
                 modifiedMethods.put(fullMethodName, profl.getGeneralMethodSusValues().get(fullMethodName));
                 System.out.println(solutionMessage);
             }
 
-            String solutionMessage;
-            if (failedTests.isEmpty()) {
-                solutionMessage = "PatchCategory = CleanFix";
-                profl.addCategoryEntry(DefaultPatchCategories.CLEAN_FIX, modifiedMethods);
-            } else if (!failPassTests.isEmpty() || !passFailTests.isEmpty()) {
-                solutionMessage = "PatchCategory = NoisyFix";
-                profl.addCategoryEntry(DefaultPatchCategories.NOISY_FIX, modifiedMethods);
-            } else if (passFailTests.isEmpty() && failPassTests.isEmpty()) {
-                solutionMessage = "PatchCategory = NoneFix";
-                profl.addCategoryEntry(DefaultPatchCategories.NONE_FIX, modifiedMethods);
+            PatchCategory pc;
+
+            if (failPassTests.size() > 0 && passFailTests.size() == 0) {
+                if (failFailTests.size() == 0) {
+                    pc = DefaultPatchCategories.CLEAN_FIX_FULL;
+                } else {
+                    pc = DefaultPatchCategories.CLEAN_FIX_PARTIAL;
+                }
+            } else if (failPassTests.size() > 0 && passFailTests.size() > 0) {
+                if (failFailTests.size() == 0) {
+                    pc = DefaultPatchCategories.NOISY_FIX_FULL;
+                } else {
+                    pc = DefaultPatchCategories.NOISY_FIX_PARTIAL;
+                }
+            } else if (failPassTests.size() == 0 && passFailTests.size() == 0) {
+                pc = DefaultPatchCategories.NONE_FIX;
             } else {
-                solutionMessage = "PatchCategory = NegFix";
-                profl.addCategoryEntry(DefaultPatchCategories.NEG_FIX, modifiedMethods);
+                pc = DefaultPatchCategories.NEG_FIX;
             }
 
-            System.out.println(solutionMessage);
-            solutionMessages.add(solutionMessage);
+            profl.addCategoryEntry(pc, modifiedMethods);
+
+            this.patchAttempts += 1;
 
         } else {
             assignMaxObjectiveValues(solution);

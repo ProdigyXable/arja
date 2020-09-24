@@ -1,8 +1,6 @@
 package us.msu.cse.repair.ec.problems;
 
-import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -13,7 +11,6 @@ import java.util.TreeMap;
 import javax.tools.JavaFileObject;
 import jmetal.core.Solution;
 import jmetal.util.JMException;
-import org.apache.commons.io.FileUtils;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import us.msu.cse.repair.core.AbstractRepairProblem;
@@ -24,6 +21,7 @@ import us.msu.cse.repair.core.util.IO;
 import us.msu.cse.repair.ec.representation.GenProgSolutionType;
 import us.msu.cse.repair.ec.variable.Edits;
 import utdallas.edu.profl.replicate.patchcategory.DefaultPatchCategories;
+import utdallas.edu.profl.replicate.patchcategory.PatchCategory;
 
 public class GenProgProblem extends AbstractRepairProblem {
 
@@ -80,7 +78,6 @@ public class GenProgProblem extends AbstractRepairProblem {
 
     @Override
     public void evaluate(Solution solution) throws JMException {
-        solutionMessages.clear();
         System.out.println("-------------------------------------");
         System.out.println("One fitness evaluation starts...");
         Edits edits = (Edits) solution.getDecisionVariables()[0];
@@ -124,18 +121,8 @@ public class GenProgProblem extends AbstractRepairProblem {
         }
 
         if (status) {
-            solutionMessages.add("Repair patch found");
             save(solution, modifiedJavaSources, compiledClasses);
         } else {
-            solutionMessages.add("Repair patch absent");
-        }
-
-        try {
-            File file = new File(this.patchOutputRoot + "/PatchTestInfo-GenProg/", "Patch_" + globalID + ".tests");
-            Collections.sort(solutionMessages);
-            FileUtils.writeLines(file, solutionMessages, "\n", true);
-        } catch (IOException e) {
-            System.out.println("Error occured when writing logFile: " + e.getMessage());
         }
 
         globalID++;
@@ -152,7 +139,7 @@ public class GenProgProblem extends AbstractRepairProblem {
             if (addTestAdequatePatch(opList, locList, ingredList)) {
                 if (diffFormat) {
                     try {
-                        IO.savePatch(modifiedJavaSources, srcJavaDir, this.patchOutputRoot, globalID);
+                        IO.savePatch(modifiedJavaSources, srcJavaDir, this.patchOutputRoot, this.patchAttempts);
                     } catch (InterruptedException e) {
                         // TODO Auto-generated catch block
                         e.printStackTrace();
@@ -177,16 +164,8 @@ public class GenProgProblem extends AbstractRepairProblem {
             testExecutor = getTestExecutor(compiledClasses, getPositiveTests());
             status = testExecutor.runTests();
         }
-
-        int failureCountInPositive = testExecutor.getFailureCountInPositive();
-        int failureCountInNegative = testExecutor.getFailureCountInNegative();
-
-        boolean allFailed = (failureCountInPositive == samplePosTests.size() && failureCountInNegative == negativeTests.size());
         
-        if (!testExecutor.isExceptional() /* && !allFailed */) {
-            double fitness = wpos * failureCountInPositive + wneg * failureCountInNegative;
-            solution.setObjective(0, fitness);
-            /* PROFL BLOCK START */
+        if (!testExecutor.isExceptional()) {
             Set<String> passPassTests = new HashSet(positiveTests);
             Set<String> failPassTests = new HashSet(negativeTests);
 
@@ -197,16 +176,12 @@ public class GenProgProblem extends AbstractRepairProblem {
 
             for (String s : failedTests) {
                 if (positiveTests.contains(s)) {
-                    String message = String.format("[PASS->FAIL] test case found: %s", s);
-                    //    System.out.println(message);
-                    solutionMessages.add(message);
+                    System.out.println(String.format("[PASS->FAIL] test case found: %s", s));
 
                     passPassTests.remove(s);
                     passFailTests.add(s);
                 } else if (negativeTests.contains(s)) {
-                    String message = String.format("[FAIL->FAIL] test case found: %s", s);
-                    //    System.out.println(message);
-                    solutionMessages.add(message);
+                    System.out.println(String.format("[FAIL->FAIL] test case found: %s", s));
 
                     failPassTests.remove(s);
                     failFailTests.add(s);
@@ -216,50 +191,46 @@ public class GenProgProblem extends AbstractRepairProblem {
             }
 
             for (String s : passPassTests) {
-                String message = String.format("[PASS->PASS] test case found: %s", s);
-                // System.out.println(message);
-                solutionMessages.add(message);
+                System.out.println(String.format("[PASS->PASS] test case found: %s", s));
             }
 
             for (String s : failPassTests) {
-                String message = String.format("[FAIL->PASS] test case found: %s", s);
-                // System.out.println(message);
-                solutionMessages.add(message);
+                System.out.println(String.format("[FAIL->PASS] test case found: %s", s));
             }
-            /* PROFL BLOCK END */
-
-            System.out.println("Number of failed tests: " + (failureCountInPositive + failureCountInNegative));
-            System.out.println("Fitness: " + fitness);
 
             Map<String, Double> modifiedMethods = new TreeMap<>();
 
             for (LCNode lcn : modifiedLines) {
-                String fullMethodName = proflMethodCoverage.lookup(lcn.getClassName(), lcn.getLineNumber());
-                String solutionMessage = String.format("Modified method %s at lineNumber=%d",
-                        fullMethodName,
-                        lcn.getLineNumber());
-                solutionMessages.add(solutionMessage);
+                String fullMethodName = profl.getMethodCoverage().lookup(lcn.getClassName(), lcn.getLineNumber());
+                String solutionMessage = String.format("Modified method %s at lineNumber=%d", fullMethodName, lcn.getLineNumber());
                 modifiedMethods.put(fullMethodName, profl.getGeneralMethodSusValues().get(fullMethodName));
                 System.out.println(solutionMessage);
             }
 
-            String solutionMessage;
-            if (failedTests.isEmpty()) {
-                solutionMessage = "PatchCategory = CleanFix";
-                profl.addCategoryEntry(DefaultPatchCategories.CLEAN_FIX, modifiedMethods);
-            } else if (!failPassTests.isEmpty() || !passFailTests.isEmpty()) {
-                solutionMessage = "PatchCategory = NoisyFix";
-                profl.addCategoryEntry(DefaultPatchCategories.NOISY_FIX, modifiedMethods);
-            } else if (passFailTests.isEmpty() && failPassTests.isEmpty()) {
-                solutionMessage = "PatchCategory = NoneFix";
-                profl.addCategoryEntry(DefaultPatchCategories.NONE_FIX, modifiedMethods);
+            PatchCategory pc;
+
+            if (failPassTests.size() > 0 && passFailTests.size() == 0) {
+                if (failFailTests.size() == 0) {
+                    pc = DefaultPatchCategories.CLEAN_FIX_FULL;
+                } else {
+                    pc = DefaultPatchCategories.CLEAN_FIX_PARTIAL;
+                }
+            } else if (failPassTests.size() > 0 && passFailTests.size() > 0) {
+                if (failFailTests.size() == 0) {
+                    pc = DefaultPatchCategories.NOISY_FIX_FULL;
+                } else {
+                    pc = DefaultPatchCategories.NOISY_FIX_PARTIAL;
+                }
+            } else if (failPassTests.size() == 0 && passFailTests.size() == 0) {
+                pc = DefaultPatchCategories.NONE_FIX;
             } else {
-                solutionMessage = "PatchCategory = NegFix";
-                profl.addCategoryEntry(DefaultPatchCategories.NEG_FIX, modifiedMethods);
+                pc = DefaultPatchCategories.NEG_FIX;
             }
 
-            System.out.println(solutionMessage);
-            solutionMessages.add(solutionMessage);
+            profl.addCategoryEntry(pc, modifiedMethods);
+            
+            this.patchAttempts += 1;
+
         } else {
             solution.setObjective(0, Double.MAX_VALUE);
             System.out.println("Timeout occurs!");

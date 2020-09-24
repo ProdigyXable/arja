@@ -1,7 +1,9 @@
 package us.msu.cse.repair.core;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -62,12 +64,11 @@ import us.msu.cse.repair.core.util.CustomURLClassLoader;
 import us.msu.cse.repair.core.util.Helper;
 import us.msu.cse.repair.core.util.IO;
 import us.msu.cse.repair.core.util.Patch;
-import utdallas.edu.profl.replicate.patchcategory.PatchCategory;
-import utdallas.edu.profl.replicate.util.MethodLineCoverageInterface;
 import utdallas.edu.profl.replicate.util.ProflResultRanking;
-import utdallas.edu.profl.replicate.util.TestLineCoverageInterface;
 import utdallas.edu.profl.replicate.util.XiaMethodLineCoverage;
 import utdallas.edu.profl.replicate.util.XiaTestLineCoverage;
+import utdallas.edu.profl.replicate.util.interfaces.MethodLineCoverageInterface;
+import utdallas.edu.profl.replicate.util.interfaces.TestLineCoverageInterface;
 
 public abstract class AbstractRepairProblem extends Problem {
 
@@ -81,6 +82,8 @@ public abstract class AbstractRepairProblem extends Problem {
     protected String xiaMethod;
     protected String xiaTest;
     protected String xiaCoverage;
+
+    protected int patchAttempts = 1;
 
     protected Double percentage;
     protected Double thr;
@@ -156,8 +159,6 @@ public abstract class AbstractRepairProblem extends Problem {
     protected MethodLineCoverageInterface proflMethodCoverage;
     protected ProflResultRanking profl;
 
-    protected List<String> solutionMessages = new LinkedList<>();
-    
     @SuppressWarnings("unchecked")
     public AbstractRepairProblem(Map<String, Object> parameters) throws Exception {
         binJavaDir = (String) parameters.get("binJavaDir");
@@ -677,6 +678,38 @@ public abstract class AbstractRepairProblem extends Problem {
         }
     }
 
+    private void saveTests(Collection<String> ff, Collection<String> fp, Collection<String> pf, Collection<String> pp) {
+        System.out.println(String.format("Patch test results: ff=%d, fp=%d, pf=%d, pp=%d", ff.size(), fp.size(), pf.size(), pp.size()));
+        LinkedList<String> messages = new LinkedList();
+
+        for (String s : ff) {
+            messages.add(String.format("[Fail->Fail] %s", s));
+        }
+
+        for (String s : fp) {
+            messages.add(String.format("[Fail->Pass] %s", s));
+        }
+
+        for (String s : pf) {
+            messages.add(String.format("[Pass->Fail] %s", s));
+        }
+
+        this.writeStringToFile(new File(String.format("%s/tests/%d.tests", this.patchOutputRoot, this.patchAttempts)), messages);
+    }
+    
+    private void writeStringToFile(File output, Collection<String> messages) {
+        output.getParentFile().mkdirs();
+
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(output))) {
+            for (String s : messages) {
+                bw.write(s);
+                bw.newLine();
+            }
+        } catch (Exception e) {
+
+        }
+    }
+
     protected Set<String> getSamplePositiveTests() {
         if (percentage == null || percentage == 1) {
             return positiveTests;
@@ -809,49 +842,4 @@ public abstract class AbstractRepairProblem extends Problem {
     public String getFinalTestsInfoPath() {
         return finalTestsInfoPath;
     }
-
-    private List<String> getProflSusValues() {
-        Map<PatchCategory, Map<String, Double>> newSus = profl.getProflSusValues();
-        List<String> returnValue = new LinkedList();
-
-        int groupedIndex = 0;
-        for (PatchCategory pc : newSus.keySet()) {
-            for (String key : newSus.get(pc).keySet()) {
-                String message = String.format("[%03d]|%.6f|[%s]|%s", ++groupedIndex, newSus.get(pc).get(key), pc.getCategoryName(), key);
-
-                System.out.println(message);
-                returnValue.add(message);
-            }
-        }
-
-        return returnValue;
-    }
-
-    private List<String> getGeneralSusValues() {
-        Map<String, Double> originalSus = profl.getGeneralMethodSusValues();
-        List<String> returnValue = new LinkedList();
-
-        int generalIndex = 0;
-        for (String key : originalSus.keySet()) {
-            if (originalSus.get(key) > 0) {
-                String message = String.format("[%03d]|%.6f|%s", ++generalIndex, originalSus.get(key), key);
-
-                System.out.println(message);
-                returnValue.add(message);
-            }
-        }
-
-        return returnValue;
-    }
-
-    public void saveAggregatedSusValues() throws IOException {
-        File file = new File(this.patchOutputRoot + File.separator + "aggregatedSusInfo.profl");
-        FileUtils.writeLines(file, this.getProflSusValues(), "\n", true);
-    }
-
-    public void saveGeneralSusValues() throws IOException {
-        File file = new File(this.patchOutputRoot + File.separator + "generalSusInfo.profl");
-        FileUtils.writeLines(file, getGeneralSusValues(), "\n", true);
-    }
-
 }

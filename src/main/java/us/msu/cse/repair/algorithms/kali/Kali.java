@@ -1,6 +1,5 @@
 package us.msu.cse.repair.algorithms.kali;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Comparator;
@@ -14,7 +13,6 @@ import java.util.TreeMap;
 import javax.tools.JavaFileObject;
 import jmetal.core.Solution;
 import jmetal.util.JMException;
-import org.apache.commons.io.FileUtils;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
@@ -26,6 +24,7 @@ import us.msu.cse.repair.core.parser.ModificationPoint;
 import us.msu.cse.repair.core.testexecutors.ITestExecutor;
 import us.msu.cse.repair.core.util.IO;
 import utdallas.edu.profl.replicate.patchcategory.DefaultPatchCategories;
+import utdallas.edu.profl.replicate.patchcategory.PatchCategory;
 
 public class Kali extends AbstractRepairProblem {
 
@@ -149,7 +148,7 @@ public class Kali extends AbstractRepairProblem {
         if (compiledClasses != null) {
             boolean flag = invokeTestExecutor(compiledClasses, modifiedLines);
             if (flag && diffFormat) {
-                IO.savePatch(modifiedJavaSources, srcJavaDir, patchOutputRoot, 0);
+                IO.savePatch(modifiedJavaSources, srcJavaDir, patchOutputRoot, this.patchAttempts);
             }
             return flag;
         } else {
@@ -178,16 +177,12 @@ public class Kali extends AbstractRepairProblem {
 
             for (String s : failedTests) {
                 if (positiveTests.contains(s)) {
-                    String message = String.format("[PASS->FAIL] test case found: %s", s);
-                    //    System.out.println(message);
-                    solutionMessages.add(message);
+                    System.out.println(String.format("[PASS->FAIL] test case found: %s", s));
 
                     passPassTests.remove(s);
                     passFailTests.add(s);
                 } else if (negativeTests.contains(s)) {
-                    String message = String.format("[FAIL->FAIL] test case found: %s", s);
-                    //    System.out.println(message);
-                    solutionMessages.add(message);
+                    System.out.println(String.format("[FAIL->FAIL] test case found: %s", s));
 
                     failPassTests.remove(s);
                     failFailTests.add(s);
@@ -197,53 +192,53 @@ public class Kali extends AbstractRepairProblem {
             }
 
             for (String s : passPassTests) {
-                String message = String.format("[PASS->PASS] test case found: %s", s);
-                // System.out.println(message);
-                solutionMessages.add(message);
+                System.out.println(String.format("[PASS->PASS] test case found: %s", s));
             }
 
             for (String s : failPassTests) {
-                String message = String.format("[FAIL->PASS] test case found: %s", s);
-                // System.out.println(message);
-                solutionMessages.add(message);
+                System.out.println(String.format("[FAIL->PASS] test case found: %s", s));
             }
 
             Map<String, Double> modifiedMethods = new TreeMap<>();
 
             for (LCNode lcn : modifiedLines) {
-                String fullMethodName = proflMethodCoverage.lookup(lcn.getClassName(), lcn.getLineNumber());
-                String solutionMessage = String.format("Modified method %s at lineNumber=%d",
-                        fullMethodName,
-                        lcn.getLineNumber());
-                solutionMessages.add(solutionMessage);
+                String fullMethodName = profl.getMethodCoverage().lookup(lcn.getClassName(), lcn.getLineNumber());
+                String solutionMessage = String.format("Modified method %s at lineNumber=%d", fullMethodName, lcn.getLineNumber());
                 modifiedMethods.put(fullMethodName, profl.getGeneralMethodSusValues().get(fullMethodName));
                 System.out.println(solutionMessage);
             }
 
-            String solutionMessage;
-            if (failedTests.isEmpty()) {
-                solutionMessage = "PatchCategory = CleanFix";
-                profl.addCategoryEntry(DefaultPatchCategories.CLEAN_FIX, modifiedMethods);
-            } else if (!failPassTests.isEmpty() || !passFailTests.isEmpty()) {
-                solutionMessage = "PatchCategory = NoisyFix";
-                profl.addCategoryEntry(DefaultPatchCategories.NOISY_FIX, modifiedMethods);
-            } else if (passFailTests.isEmpty() && failPassTests.isEmpty()) {
-                solutionMessage = "PatchCategory = NoneFix";
-                profl.addCategoryEntry(DefaultPatchCategories.NONE_FIX, modifiedMethods);
+            PatchCategory pc;
+
+            if (failPassTests.size() > 0 && passFailTests.size() == 0) {
+                if (failFailTests.size() == 0) {
+                    pc = DefaultPatchCategories.CLEAN_FIX_FULL;
+                } else {
+                    pc = DefaultPatchCategories.CLEAN_FIX_PARTIAL;
+                }
+            } else if (failPassTests.size() > 0 && passFailTests.size() > 0) {
+                if (failFailTests.size() == 0) {
+                    pc = DefaultPatchCategories.NOISY_FIX_FULL;
+                } else {
+                    pc = DefaultPatchCategories.NOISY_FIX_PARTIAL;
+                }
+            } else if (failPassTests.size() == 0 && passFailTests.size() == 0) {
+                pc = DefaultPatchCategories.NONE_FIX;
             } else {
-                solutionMessage = "PatchCategory = NegFix";
-                profl.addCategoryEntry(DefaultPatchCategories.NEG_FIX, modifiedMethods);
+                pc = DefaultPatchCategories.NEG_FIX;
             }
 
-            System.out.println(solutionMessage);
-            solutionMessages.add(solutionMessage);
+            profl.addCategoryEntry(pc, modifiedMethods);
+            
+            this.patchAttempts += 1;
+
         } else {
-            String message = "Test suite exception detected";
-            System.out.println(message);
-            solutionMessages.add(message);
+            System.out.println("Test suite exception detected");
         }
         return status;
     }
+    
+    
 
     boolean runTests(ModificationPoint mp, ASTRewrite rewriter, List<LCNode> modifiedLines) throws Exception {
         Map<String, ASTRewrite> astRewriters = new HashMap<String, ASTRewrite>();
@@ -255,7 +250,7 @@ public class Kali extends AbstractRepairProblem {
         if (compiledClasses != null) {
             boolean flag = invokeTestExecutor(compiledClasses, modifiedLines);
             if (flag && diffFormat) {
-                IO.savePatch(modifiedJavaSources, srcJavaDir, patchOutputRoot, globalID);
+                IO.savePatch(modifiedJavaSources, srcJavaDir, patchOutputRoot, this.patchAttempts);
             }
             return flag;
         } else {
@@ -285,7 +280,6 @@ public class Kali extends AbstractRepairProblem {
 
         long estimatedTime = System.currentTimeMillis() - initTime;
         data += "EstimatedTime: " + estimatedTime + "\n";
-        savePatch(data);
     }
 
     void saveInsertReturn(ModificationPoint mp, boolean flag) throws IOException {
@@ -298,7 +292,6 @@ public class Kali extends AbstractRepairProblem {
 
         long estimatedTime = System.currentTimeMillis() - initTime;
         data += "EstimatedTime: " + estimatedTime + "\n";
-        savePatch(data);
     }
 
     void saveDeleteStatement(ModificationPoint mp) throws IOException {
@@ -310,24 +303,5 @@ public class Kali extends AbstractRepairProblem {
 
         long estimatedTime = System.currentTimeMillis() - initTime;
         data += "EstimatedTime: " + estimatedTime + "\n";
-        savePatch(data);
     }
-
-    void savePatch(String data) throws IOException {
-        try {
-            File file = new File(this.patchOutputRoot + "/PatchTestInfo-Kali/", "Patch_" + globalID + ".tests");
-            Collections.sort(solutionMessages);
-            FileUtils.writeLines(file, solutionMessages, "\n", true);
-        } catch (IOException e) {
-            System.out.println("Error occured when writing logFile: " + e.getMessage());
-        }
-
-        File patchFile = new File(patchOutputRoot + "/RepairPatches-Kali/", "Patch_" + globalID + ".patch");
-        if (patchFile.exists()) {
-            patchFile.delete();
-        }
-
-        FileUtils.writeByteArrayToFile(patchFile, data.getBytes());
-    }
-
 }

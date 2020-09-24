@@ -15,10 +15,6 @@ public class KaliMain {
         AbstractRepairAlgorithm repairAlg = new KaliAlg(problem);
 
         System.out.println("-------------------------------------");
-        problem.saveGeneralSusValues();
-        System.out.println("-------------------------------------");
         repairAlg.execute();
-        problem.saveAggregatedSusValues();
-        System.out.println("-------------------------------------");
     }
 }
