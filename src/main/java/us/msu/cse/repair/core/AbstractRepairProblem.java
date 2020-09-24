@@ -64,6 +64,7 @@ import us.msu.cse.repair.core.util.CustomURLClassLoader;
 import us.msu.cse.repair.core.util.Helper;
 import us.msu.cse.repair.core.util.IO;
 import us.msu.cse.repair.core.util.Patch;
+import utdallas.edu.profl.replicate.patchcategory.PatchCategory;
 import utdallas.edu.profl.replicate.util.ProflResultRanking;
 import utdallas.edu.profl.replicate.util.XiaMethodLineCoverage;
 import utdallas.edu.profl.replicate.util.XiaTestLineCoverage;
@@ -83,7 +84,7 @@ public abstract class AbstractRepairProblem extends Problem {
     protected String xiaTest;
     protected String xiaCoverage;
 
-    protected int patchAttempts = 1;
+    protected int patchAttempts = 0;
 
     protected Double percentage;
     protected Double thr;
@@ -218,6 +219,7 @@ public abstract class AbstractRepairProblem extends Problem {
         }
 
         patchOutputRoot = (String) parameters.get("patchOutputRoot");
+        (new File(patchOutputRoot)).mkdirs();
         if (patchOutputRoot == null) {
             patchOutputRoot = "patches_" + id;
         }
@@ -678,9 +680,31 @@ public abstract class AbstractRepairProblem extends Problem {
         }
     }
 
-    private void saveTests(Collection<String> ff, Collection<String> fp, Collection<String> pf, Collection<String> pp) {
+    protected void saveProflInformation() {
+        File genOutput = new File(String.format("%s/generalSusInfo.profl", this.patchOutputRoot));
+        this.writeStringToFile(genOutput, this.profl.outputSbflSus());
+
+        File susOutput = new File(String.format("%s/aggregatedSusInfo.profl", this.patchOutputRoot));
+        this.writeStringToFile(susOutput, this.profl.outputProflResults());
+
+        File catOutput = new File(String.format("%s/category_information.profl", this.patchOutputRoot));
+        this.writeStringToFile(catOutput, this.profl.outputProflCatInfo());
+
+    }
+
+    protected void saveTests(Set<String> ff, Set<String> fp, Set<String> pf, Set<String> pp, PatchCategory pc, Map<String, Collection<Integer>> modifiedMethodsLines) {
         System.out.println(String.format("Patch test results: ff=%d, fp=%d, pf=%d, pp=%d", ff.size(), fp.size(), pf.size(), pp.size()));
         LinkedList<String> messages = new LinkedList();
+
+        messages.add(String.format("PatchCategory = %s", pc.getCategoryName()));
+
+        for (String k : modifiedMethodsLines.keySet()) {
+            for (Integer i : modifiedMethodsLines.get(k)) {
+                messages.add(String.format("Modified method=%s at line=%d", k, i));
+            }
+        }
+
+        messages.add("------------------");
 
         for (String s : ff) {
             messages.add(String.format("[Fail->Fail] %s", s));
@@ -696,7 +720,7 @@ public abstract class AbstractRepairProblem extends Problem {
 
         this.writeStringToFile(new File(String.format("%s/tests/%d.tests", this.patchOutputRoot, this.patchAttempts)), messages);
     }
-    
+
     private void writeStringToFile(File output, Collection<String> messages) {
         output.getParentFile().mkdirs();
 

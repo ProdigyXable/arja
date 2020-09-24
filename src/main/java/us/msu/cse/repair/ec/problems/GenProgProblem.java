@@ -1,6 +1,7 @@
 package us.msu.cse.repair.ec.problems;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -111,6 +112,7 @@ public class GenProgProblem extends AbstractRepairProblem {
         if (compiledClasses != null) {
             try {
                 status = invokeTestExecutor(compiledClasses, solution, modifiedLines);
+                IO.savePatch(modifiedJavaSources, srcJavaDir, this.patchOutputRoot, this.patchAttempts);
             } catch (Exception e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
@@ -155,6 +157,8 @@ public class GenProgProblem extends AbstractRepairProblem {
     }
 
     boolean invokeTestExecutor(Map<String, JavaFileObject> compiledClasses, Solution solution, List<LCNode> modifiedLines) throws Exception {
+        this.patchAttempts += 1;
+
         Set<String> samplePosTests = getSamplePositiveTests();
         ITestExecutor testExecutor = getTestExecutor(compiledClasses, samplePosTests);
 
@@ -164,7 +168,7 @@ public class GenProgProblem extends AbstractRepairProblem {
             testExecutor = getTestExecutor(compiledClasses, getPositiveTests());
             status = testExecutor.runTests();
         }
-        
+
         if (!testExecutor.isExceptional()) {
             Set<String> passPassTests = new HashSet(positiveTests);
             Set<String> failPassTests = new HashSet(negativeTests);
@@ -176,12 +180,12 @@ public class GenProgProblem extends AbstractRepairProblem {
 
             for (String s : failedTests) {
                 if (positiveTests.contains(s)) {
-                    System.out.println(String.format("[PASS->FAIL] test case found: %s", s));
+                    // System.out.println(String.format("[PASS->FAIL] test case found: %s", s));
 
                     passPassTests.remove(s);
                     passFailTests.add(s);
                 } else if (negativeTests.contains(s)) {
-                    System.out.println(String.format("[FAIL->FAIL] test case found: %s", s));
+                    // System.out.println(String.format("[FAIL->FAIL] test case found: %s", s));
 
                     failPassTests.remove(s);
                     failFailTests.add(s);
@@ -191,19 +195,36 @@ public class GenProgProblem extends AbstractRepairProblem {
             }
 
             for (String s : passPassTests) {
-                System.out.println(String.format("[PASS->PASS] test case found: %s", s));
+                // System.out.println(String.format("[PASS->PASS] test case found: %s", s));
             }
 
             for (String s : failPassTests) {
-                System.out.println(String.format("[FAIL->PASS] test case found: %s", s));
+                // FSystem.out.println(String.format("[FAIL->PASS] test case found: %s", s));
             }
 
             Map<String, Double> modifiedMethods = new TreeMap<>();
+            Map<String, Collection<Integer>> modifiedMethodsLines = new TreeMap<>();
+
+            System.out.println(String.format(" --- Information for Patch %d ---", this.patchAttempts));
 
             for (LCNode lcn : modifiedLines) {
+
                 String fullMethodName = profl.getMethodCoverage().lookup(lcn.getClassName(), lcn.getLineNumber());
                 String solutionMessage = String.format("Modified method %s at lineNumber=%d", fullMethodName, lcn.getLineNumber());
+
+                Collection<Integer> values;
+
+                if (modifiedMethodsLines.get(fullMethodName) == null) {
+                    values = new LinkedList();
+                } else {
+                    values = modifiedMethodsLines.get(fullMethodName);
+                }
+
+                values.add(lcn.getLineNumber());
+
+                modifiedMethodsLines.put(fullMethodName, values);
                 modifiedMethods.put(fullMethodName, profl.getGeneralMethodSusValues().get(fullMethodName));
+
                 System.out.println(solutionMessage);
             }
 
@@ -227,8 +248,12 @@ public class GenProgProblem extends AbstractRepairProblem {
                 pc = DefaultPatchCategories.NEG_FIX;
             }
 
+            System.out.println("Patch Category = " + pc.getCategoryName());
             profl.addCategoryEntry(pc, modifiedMethods);
-            
+
+            this.saveTests(failFailTests, failPassTests, passFailTests, passPassTests, pc, modifiedMethodsLines);
+            this.saveProflInformation();
+
             this.patchAttempts += 1;
 
         } else {
@@ -238,5 +263,7 @@ public class GenProgProblem extends AbstractRepairProblem {
 
         return status;
     }
+
+ 
 
 }
